@@ -1,5 +1,11 @@
 <template>
-  <select name="" id="" :value="modelValue" @change="onChangeInput">
+  <select
+    name=""
+    id=""
+    :disabled="$attrs.disabled"
+    :value="modelValue"
+    @change="onChangeInput"
+  >
     <option value="" disabled selected hidden>{{ placeholder }}</option>
     <option v-for="{ id, name } in options" :key="id" :value="id">
       {{ name }}

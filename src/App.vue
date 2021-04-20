@@ -1,44 +1,47 @@
+// TODO: Handle fetch error
+
 <template>
   <Select
-    placeholder="Selecciona Crimen"
-    :options="crimenes"
-    v-model="selectedCrimenId"
-    @change="handleSelectChange"
+    :disabled="this.status === 'loading'"
+    :placeholder="
+      this.status === 'loading' ? 'Cargando Estados...' : 'Selecciona un Estado'
+    "
+    :options="states"
+    v-model="selectedStateId"
+    @change="handleStateChange"
   />
   <Select
-    placeholder="Selecciona Entidad"
-    :options="entidades"
-    v-model="selectedEntidadId"
-    @change="handleEntidadChange"
-  />
-  <Select
-    placeholder="Selecciona Municipio"
-    :options="municipios"
-    v-model="selectedMunicipioId"
+    :disabled="this.status === 'loading' || this.selectedState === ''"
+    placeholder="Selecciona un Municipio"
+    :options="muns"
+    v-model="selectedMunId"
     @change="handleSelectChange"
   />
-  <p>Crimen: {{ this.selectedCrimenId }}</p>
-  <p>Entidad: {{ this.selectedEntidadId }}</p>
-  <p>Municipio: {{ this.selectedMunicipioId }}</p>
+  <p>Entidad: {{ this.selectedStateId }}</p>
+  <p>Municipio: {{ this.selectedMunId }}</p>
 </template>
 
 <script>
 import Select from "./components/Select";
+// import Graph from "./components/Graph";
 
 export default {
   name: "App",
   components: { Select },
   data() {
     return {
-      crimenes: [],
-      entidades: [],
-      municipios: [],
-      selectedCrimenId: "",
-      selectedEntidadId: "",
-      selectedMunicipioId: "",
+      states: [],
+      muns: [],
+      crimeId: 1,
+      selectedState: "",
+      selectedStateId: "",
+      selectedMun: "",
+      selectedMunId: "",
+      status: "idle",
     };
   },
   created() {
+    this.status = "loading";
     fetch(
       "https://script.google.com/macros/s/AKfycbw7d0IaEnAFY4Iihd9OOOkCEvdTpfHafSQk3NfIyPMb-vvCpZysibFVJl1lD7TGw2pZ6g/exec"
     )
@@ -46,33 +49,36 @@ export default {
         return res.json();
       })
       .then((data) => {
-        this.crimenes = data.crimenes;
-        this.entidades = data.entidades;
-        // this.municipios = this.entidades[0].municipios;
+        this.status = "idle";
+        this.states = data.entidades;
+        // this.muns = this.states[0].municipios;
+      })
+      .catch((err) => {
+        this.errorMessage =
+          "Hubo un error al obtener los datos. Por favor refresca la página";
+        console.log(err);
       });
   },
   methods: {
-    setMunicipios() {
-      const municipios = this.entidades.find(
-        (entidad) => entidad.id === Number(this.selectedEntidadId)
+    setMuns() {
+      const muns = this.states.find(
+        (state) => state.id === parseInt(this.selectedStateId)
       ).municipios;
-      this.municipios = municipios;
-      this.selectedMunicipioId = String(this.municipios[0].id);
+      this.muns = muns;
+      if (this.selectedMunId !== "") {
+        this.selectedMunId = String(this.muns[0].id);
+      }
     },
-    handleSelectChange() {
-      if (
-        this.selectedCrimenId === "" ||
-        this.selectedEntidadId === "" ||
-        this.selectedMunicipioId === ""
-      )
-        return;
+
+    getData() {
+      this.status = "loading";
 
       const url = "https://spotlight-unfpa.datacivica.org/api/v1/timeline";
 
       const parameters = {
-        id_crime: Number(this.selectedCrimenId),
-        id_ent: Number(this.selectedEntidadId),
-        id_mun1: Number(this.selectedMunicipioId),
+        id_crime: parseInt(this.crimeId),
+        id_ent: parseInt(this.selectedStateId),
+        id_mun1: parseInt(this.selectedMunId),
       };
       console.log(parameters);
 
@@ -84,10 +90,20 @@ export default {
         body: JSON.stringify(parameters),
       })
         .then((res) => res.json())
-        .then((data) => console.log(data));
+        .then((data) => {
+          this.status = "idle";
+          console.log(data);
+        });
     },
-    handleEntidadChange() {
-      this.setMunicipios();
+    handleSelectChange() {
+      if (this.selectedStateId === "" || this.selectedMunId === "") return;
+      this.getData();
+    },
+    handleStateChange() {
+      this.selectedState = this.states.find(
+        (state) => state.id === parseInt(this.selectedStateId)
+      ).name;
+      this.setMuns();
       this.handleSelectChange();
     },
   },
