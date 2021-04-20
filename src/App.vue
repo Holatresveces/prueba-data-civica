@@ -15,19 +15,24 @@
     placeholder="Selecciona un Municipio"
     :options="muns"
     v-model="selectedMunId"
-    @change="handleSelectChange"
+    @change="handleMunChange"
   />
-  <p>Entidad: {{ this.selectedStateId }}</p>
-  <p>Municipio: {{ this.selectedMunId }}</p>
+  <p>Entidad: {{ this.selectedStateId }} {{ this.selectedState }}</p>
+  <p>Municipio: {{ this.selectedMunId }} {{ this.selectedMun }}</p>
+  <div class="chart">
+    <Chart :data="chartData" />
+    <Loader v-show="this.status === 'loading'" />
+  </div>
 </template>
 
 <script>
 import Select from "./components/Select";
-// import Graph from "./components/Graph";
+import Chart from "./components/Chart";
+import Loader from "./components/Loader";
 
 export default {
   name: "App",
-  components: { Select },
+  components: { Select, Chart, Loader },
   data() {
     return {
       states: [],
@@ -38,35 +43,50 @@ export default {
       selectedMun: "",
       selectedMunId: "",
       status: "idle",
+      chartData: [],
     };
   },
   created() {
-    this.status = "loading";
-    fetch(
-      "https://script.google.com/macros/s/AKfycbw7d0IaEnAFY4Iihd9OOOkCEvdTpfHafSQk3NfIyPMb-vvCpZysibFVJl1lD7TGw2pZ6g/exec"
-    )
-      .then((res) => {
-        return res.json();
-      })
-      .then((data) => {
-        this.status = "idle";
-        this.states = data.entidades;
-        // this.muns = this.states[0].municipios;
-      })
-      .catch((err) => {
-        this.errorMessage =
-          "Hubo un error al obtener los datos. Por favor refresca la página";
-        console.log(err);
-      });
+    this.getStates();
   },
   methods: {
+    getStates() {
+      let data = localStorage.getItem("datos");
+
+      if (data) {
+        this.states = JSON.parse(data).entidades;
+      } else {
+        this.status = "loading";
+        const url =
+          "https://script.google.com/macros/s/AKfycbw7d0IaEnAFY4Iihd9OOOkCEvdTpfHafSQk3NfIyPMb-vvCpZysibFVJl1lD7TGw2pZ6g/exec";
+
+        fetch(url)
+          .then((res) => {
+            return res.json();
+          })
+          .then((data) => {
+            localStorage.setItem("datos", JSON.stringify(data));
+            this.status = "idle";
+            this.states = data.entidades;
+          })
+          .catch((err) => {
+            this.errorMessage =
+              "Hubo un error al obtener los datos. Por favor refresca la página";
+            console.log(err);
+          });
+      }
+    },
     setMuns() {
-      const muns = this.states.find(
+      this.muns = this.states.find(
         (state) => state.id === parseInt(this.selectedStateId)
       ).municipios;
-      this.muns = muns;
+
       if (this.selectedMunId !== "") {
+        console.log("change");
         this.selectedMunId = String(this.muns[0].id);
+        this.selectedMun = this.muns.find(
+          (mun) => mun.id === parseInt(this.selectedMunId)
+        ).name;
       }
     },
 
@@ -92,12 +112,19 @@ export default {
         .then((res) => res.json())
         .then((data) => {
           this.status = "idle";
+          this.chartData = data;
           console.log(data);
         });
     },
     handleSelectChange() {
       if (this.selectedStateId === "" || this.selectedMunId === "") return;
       this.getData();
+    },
+    handleMunChange() {
+      this.selectedMun = this.muns.find(
+        (mun) => mun.id === parseInt(this.selectedMunId)
+      ).name;
+      this.handleSelectChange();
     },
     handleStateChange() {
       this.selectedState = this.states.find(
@@ -122,5 +149,13 @@ export default {
 select {
   width: 100%;
   max-width: 200px;
+}
+
+.chart {
+  position: relative;
+}
+
+.d3 {
+  width: 100%;
 }
 </style>
