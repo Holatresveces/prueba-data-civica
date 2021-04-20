@@ -35,9 +35,10 @@ export default {
   components: { Select, Chart, Loader },
   data() {
     return {
+      crimeId: 1,
+      crimeName: "",
       states: [],
       muns: [],
-      crimeId: 1,
       selectedState: "",
       selectedStateId: "",
       selectedMun: "",
@@ -54,7 +55,11 @@ export default {
       let data = localStorage.getItem("datos");
 
       if (data) {
-        this.states = JSON.parse(data).entidades;
+        const parsedData = JSON.parse(data);
+        this.crimeName = parsedData.crimenes.find(
+          (crimen) => crimen.id === this.crimeId
+        );
+        this.states = parsedData.entidades;
       } else {
         this.status = "loading";
         const url =
@@ -144,11 +149,6 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-select {
-  width: 100%;
-  max-width: 200px;
 }
 
 .chart {

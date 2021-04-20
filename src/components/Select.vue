@@ -1,5 +1,6 @@
 <template>
   <select
+    class="form-select"
     name=""
     id=""
     :disabled="$attrs.disabled"
