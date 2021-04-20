@@ -1,26 +1,86 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <Select
+    placeholder="Selecciona Crimen"
+    :options="crimenes"
+    v-model="selectedCrimenId"
+  />
+  <Select
+    placeholder="Selecciona Entidad"
+    :options="entidades"
+    v-model="selectedEntidadId"
+    @change="setMunicipios"
+  />
+  <Select
+    placeholder="Selecciona Municipio"
+    :options="municipios"
+    v-model="selectedMunicipioId"
+  />
+  <p>Crimen: {{ this.selectedCrimenId }}</p>
+  <p>Entidad: {{ this.selectedEntidadId }}</p>
+  <p>Municipio: {{ this.selectedMunicipioId }}</p>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import Select from "./components/Select";
 
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+  name: "App",
+  components: { Select },
+  data() {
+    return {
+      crimenes: [],
+      entidades: [],
+      municipios: [],
+      selectedCrimenId: "",
+      selectedEntidadId: "",
+      selectedMunicipioId: "",
+    };
+  },
+  created() {
+    fetch(
+      "https://script.google.com/macros/s/AKfycbw7d0IaEnAFY4Iihd9OOOkCEvdTpfHafSQk3NfIyPMb-vvCpZysibFVJl1lD7TGw2pZ6g/exec"
+    )
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        this.crimenes = data.crimenes;
+        this.entidades = data.entidades;
+        // this.municipios = this.entidades[0].municipios;
+      });
+  },
+  computed: {
+    getMunicipios() {
+      return this.selectedEntidadId === "null"
+        ? []
+        : this.entidades.find(
+            (entidad) => entidad.id === Number(this.selectedEntidadId)
+          ).municipios;
+    },
+  },
+  methods: {
+    setMunicipios() {
+      const municipios = this.entidades.find(
+        (entidad) => entidad.id === Number(this.selectedEntidadId)
+      ).municipios;
+      this.municipios = municipios;
+      this.selectedMunicipioId = String(this.municipios[0].id);
+    },
+  },
+};
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+select {
+  width: 100%;
+  max-width: 200px;
 }
 </style>
