@@ -3,17 +3,19 @@
     placeholder="Selecciona Crimen"
     :options="crimenes"
     v-model="selectedCrimenId"
+    @change="handleSelectChange"
   />
   <Select
     placeholder="Selecciona Entidad"
     :options="entidades"
     v-model="selectedEntidadId"
-    @change="setMunicipios"
+    @change="handleEntidadChange"
   />
   <Select
     placeholder="Selecciona Municipio"
     :options="municipios"
     v-model="selectedMunicipioId"
+    @change="handleSelectChange"
   />
   <p>Crimen: {{ this.selectedCrimenId }}</p>
   <p>Entidad: {{ this.selectedEntidadId }}</p>
@@ -49,15 +51,6 @@ export default {
         // this.municipios = this.entidades[0].municipios;
       });
   },
-  computed: {
-    getMunicipios() {
-      return this.selectedEntidadId === "null"
-        ? []
-        : this.entidades.find(
-            (entidad) => entidad.id === Number(this.selectedEntidadId)
-          ).municipios;
-    },
-  },
   methods: {
     setMunicipios() {
       const municipios = this.entidades.find(
@@ -65,6 +58,37 @@ export default {
       ).municipios;
       this.municipios = municipios;
       this.selectedMunicipioId = String(this.municipios[0].id);
+    },
+    handleSelectChange() {
+      if (
+        this.selectedCrimenId === "" ||
+        this.selectedEntidadId === "" ||
+        this.selectedMunicipioId === ""
+      )
+        return;
+
+      const url = "https://spotlight-unfpa.datacivica.org/api/v1/timeline";
+
+      const parameters = {
+        id_crime: Number(this.selectedCrimenId),
+        id_ent: Number(this.selectedEntidadId),
+        id_mun1: Number(this.selectedMunicipioId),
+      };
+      console.log(parameters);
+
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(parameters),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log(data));
+    },
+    handleEntidadChange() {
+      this.setMunicipios();
+      this.handleSelectChange();
     },
   },
 };
