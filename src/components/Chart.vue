@@ -10,7 +10,8 @@
 </template>
 
 <script>
-// TO DO: Refactor plot() method as most of the logic is duplicated for mobile and desktop.
+// TO DO: Refactor plot() method as most of the logic is duplicated for mobile
+// and desktop. It could also be much prettier lol
 
 import _ from "lodash";
 import * as d3 from "d3";
@@ -49,6 +50,8 @@ export default {
     sort: String, // '0' -> Ascendente, '1' -> Descendente
   },
   watch: {
+    // Whenever data or sort criteria change, trigger a redraw
+
     data() {
       if (!this.data.length) return;
       this.plot();
@@ -82,6 +85,7 @@ export default {
     this.init();
   },
   methods: {
+    // Initializes d3 functions, objects and paths
     init() {
       this.svg = d3
         .select(".d3")
@@ -123,6 +127,9 @@ export default {
         .style("stroke", "red")
         .style("stroke-width", "2px");
     },
+
+    // omg this is so ugly. This one needs a refactor.
+    // Need a better way to handle data parsing for 'Nacional' case.
     plot() {
       if (this.isMobile) {
         this.xScale = d3
@@ -235,15 +242,19 @@ export default {
         this.lineGroup.attr("d", line(points));
       }
     },
+
+    // Returns the lowest and the highest year values to display in the heading
     getYearsRange() {
       const range = d3.extent(this.data, (d) => d.year);
       return { min: range[0], max: range[1] };
     },
+
     onResize() {
       this.setDimensions();
       if (!this.data.length) return;
       this.plot();
     },
+
     setDimensions() {
       this.viewport.width = document.body.clientWidth;
       this.viewport.height = window.innerHeight;

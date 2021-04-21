@@ -3,7 +3,8 @@
     <div class="row">
       <div class="col-md">
         <!-- 
-          Disable Select components when loading a new request
+          Disable Select components when loading a new request or if
+          options have not been loaded yet
          -->
         <Select
           label="Estado"
@@ -51,7 +52,7 @@
 </template>
 
 <script>
-// TO DO: Maybe find a better way of handling the sort property
+// TO DO: Maybe find a better way to represent the sort property
 
 import Select from "./components/Select";
 import Chart from "./components/Chart";
@@ -62,7 +63,7 @@ export default {
   components: { Select, Chart, ErrorNotification },
   data() {
     return {
-      crimeId: 4, // Manually set according to the Google Sheets document
+      crimeId: 4, // Manually set according to the Google Sheets document. See getSelectOptions method below.
       crimeName: "",
       states: [],
       muns: [],
@@ -80,14 +81,24 @@ export default {
     this.getSelectOptions();
   },
   methods: {
-    // Options are retrieved directly from the Google Sheets document through a Google
-    // Apps Script endpoint. To avoid making a new request on each visit, options are
-    // stored in localStorage (since they're not likely to change constantly).
     getSelectOptions() {
-      let data = localStorage.getItem("selectOptions");
+      // Options are retrieved directly from the Google Sheets document through a Google
+      // Apps Script endpoint. To avoid making a new request on each visit, options are
+      // stored in localStorage (since they're not likely to change constantly).
+      // Response example:
+      // {
+      //   crimenes: [{id, name}],
+      //   entidades: [{id, name, municipios: [{id, name}]}],
+      // }
+      // All properties in the Google Sheets document are available in the response, except
+      // (id_name, crime_name), (id_ent, name_ent), (id_mun, name_mun) are renamed by the
+      // Google Apps Script endpoint as (id, name) for better reusability in components
 
-      if (data) {
-        const parsedData = JSON.parse(data);
+      let localStoragedata = localStorage.getItem("selectOptions");
+
+      if (localStoragedata) {
+        const parsedData = JSON.parse(localStoragedata);
+        console.log(parsedData);
         this.crimeName = parsedData.crimenes.find(
           (crimen) => crimen.id === this.crimeId
         ).name;
@@ -108,8 +119,8 @@ export default {
             ).name;
             this.states = data.entidades;
           })
-          .catch((err) => {
-            console.log(err);
+          .catch(() => {
+            // console.log(err);
             const message =
               "No fue posible cargar los datos. Favor de refrescar la página";
             this.onRequestError(message);
@@ -117,6 +128,7 @@ export default {
       }
     },
 
+    // Retrieve data for a specific state and municipality (¿así se dice? jaja)
     getData() {
       this.onRequestInit();
       const url = "https://spotlight-unfpa.datacivica.org/api/v1/timeline";
@@ -127,27 +139,24 @@ export default {
         id_mun1: parseInt(this.selectedMunId),
       };
 
-      fetch(url, {
+      const options = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(parameters),
-      })
+      };
+
+      fetch(url, options)
         .then((res) => res.json())
         .then((data) => {
-          this.status = "idle";
-          this.chartData = data.sort((a, b) => {
-            return a.year - b.year;
-          });
-          console.log(data);
+          this.onRequestSuccess(data);
         })
-        .catch((err) => {
-          this.selectedMunId = "";
+        .catch(() => {
           const message =
             "No fue posible obtener los datos. Por favor intenta nuevamente";
           this.onRequestError(message);
-          console.log(err);
+          // console.log(err);
         });
     },
 
@@ -179,6 +188,8 @@ export default {
       }
     },
 
+    // Called for every onChange event on the Select component. This allows to
+    // start a new data request or redraw the chart without additional buttons
     onSelectChange() {
       if (this.selectedStateId === "" || this.selectedMunId === "") return;
       this.getData();
@@ -189,29 +200,20 @@ export default {
       this.errorMessage = "";
     },
 
+    onRequestSuccess(data) {
+      this.status = "idle";
+      this.chartData = data.sort((a, b) => {
+        return a.year - b.year;
+      });
+      // console.log(data);
+    },
+
     onRequestError(message) {
       this.status = "error";
+      this.selectedMunId = "";
       this.errorMessage = message;
       this.chartData = [];
     },
   },
 };
 </script>
-
-<style>
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.chart {
-  position: relative;
-}
-
-.d3 {
-  width: 100%;
-}
-</style>
