@@ -1,12 +1,17 @@
 <template>
-  <div class="d3"></div>
+  <div class="wrapper">
+    <div class="d3"></div>
+    <Loader v-show="loading" />
+  </div>
 </template>
 
 <script>
 import * as d3 from "d3";
+import Loader from "./Loader";
 
 export default {
   name: "Chart",
+  components: { Loader },
   data() {
     return {
       svg: Object,
@@ -22,13 +27,17 @@ export default {
     };
   },
   props: {
+    loading: Boolean,
     data: Array,
     selectedState: String,
     selectedMun: String,
-    sort: Number,
+    sort: String,
   },
   watch: {
     data() {
+      this.plot();
+    },
+    sort() {
       this.plot();
     },
   },
@@ -45,7 +54,12 @@ export default {
 
       this.yScale = d3
         .scaleLinear()
-        .domain([1, d3.max(this.data, (d) => parseInt(d.total_mun1))])
+        .domain([
+          1,
+          d3.max(this.data, (d) => {
+            return d.total_mun1 === undefined ? d.total_nac : d.total_mun1;
+          }),
+        ])
         .range([0, this.height - 2 * this.margin]);
 
       this.xScale = d3
@@ -76,9 +90,19 @@ export default {
     plot() {
       this.xScale = d3.scaleTime().domain(d3.extent(this.data, (d) => d.year));
 
+      const yDomain = [
+        1,
+        d3.max(this.data, (d) =>
+          parseInt(d.total_mun1 === undefined ? d.total_nac : d.total_mun1)
+        ),
+      ];
+      if (this.sort === "1") {
+        yDomain.reverse();
+      }
+
       this.yScale = d3
         .scaleLinear()
-        .domain([1, d3.max(this.data, (d) => parseInt(d.total_mun1))])
+        .domain(yDomain)
         .range([this.height - 2 * this.margin, 0]);
 
       this.width = document.querySelector(".d3").clientWidth;
@@ -101,7 +125,9 @@ export default {
 
       const points = this.data.map((d) => [
         this.xScale(d.year),
-        this.yScale(parseInt(d.total_mun1)),
+        this.yScale(
+          parseInt(d.total_mun1 === undefined ? d.total_nac : d.total_mun1)
+        ),
       ]);
 
       this.lineGroup.attr("d", line(points));
@@ -112,3 +138,10 @@ export default {
   },
 };
 </script>
+
+<style>
+.wrapper {
+  position: relative;
+  overflow: hidden;
+}
+</style>

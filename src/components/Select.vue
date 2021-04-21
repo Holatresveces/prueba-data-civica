@@ -1,17 +1,24 @@
 <template>
-  <select
-    class="form-select"
-    name=""
-    id=""
-    :disabled="$attrs.disabled"
-    :value="modelValue"
-    @change="onChangeInput"
-  >
-    <option value="" disabled selected hidden>{{ placeholder }}</option>
-    <option v-for="{ id, name } in options" :key="id" :value="id">
-      {{ name }}
-    </option>
-  </select>
+  <div class="form-group mb-4">
+    <label :for="label">{{ label }}:</label>
+    <select
+      class="form-select"
+      name=""
+      :id="label"
+      :disabled="$attrs.disabled"
+      :value="modelValue"
+      @change="onChangeInput"
+    >
+      <option value="" disabled selected hidden>{{ placeholder }}</option>
+      <option
+        v-for="({ id, name }, i) in options"
+        :key="id === undefined ? i : id"
+        :value="id === undefined ? i : id"
+      >
+        {{ name || options[i] }}
+      </option>
+    </select>
+  </div>
 </template>
 
 <script>
@@ -21,6 +28,7 @@ export default {
     placeholder: String,
     options: Array,
     modelValue: String,
+    label: String,
   },
   inheritAttrs: false, // https://github.com/vuejs/vue-next/issues/813
   methods: {

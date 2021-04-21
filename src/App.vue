@@ -1,38 +1,56 @@
 // TODO: Handle fetch error
 
 <template>
-  <Select
-    :disabled="this.status === 'loading'"
-    :placeholder="
-      this.status === 'loading' ? 'Cargando Estados...' : 'Selecciona un Estado'
-    "
-    :options="states"
-    v-model="selectedStateId"
-    @change="handleStateChange"
-  />
-  <Select
-    :disabled="this.status === 'loading' || this.selectedState === ''"
-    placeholder="Selecciona un Municipio"
-    :options="muns"
-    v-model="selectedMunId"
-    @change="handleMunChange"
-  />
-  <p>Entidad: {{ this.selectedStateId }} {{ this.selectedState }}</p>
-  <p>Municipio: {{ this.selectedMunId }} {{ this.selectedMun }}</p>
-  <div class="chart">
-    <Chart :data="chartData" />
-    <Loader v-show="this.status === 'loading'" />
+  <div class="container">
+    <div class="row">
+      <div class="col-md">
+        <Select
+          label="Estado"
+          :disabled="this.status === 'loading'"
+          :placeholder="
+            this.status === 'loading'
+              ? 'Cargando Estados...'
+              : 'Selecciona un Estado'
+          "
+          :options="states"
+          v-model="selectedStateId"
+          @change="handleStateChange"
+        />
+      </div>
+      <div class="col-md">
+        <Select
+          label="Municipio"
+          :disabled="this.status === 'loading' || this.selectedState === ''"
+          placeholder="Selecciona un Municipio"
+          :options="muns"
+          v-model="selectedMunId"
+          @change="handleMunChange"
+        />
+      </div>
+      <div class="col-md">
+        <Select
+          label="Orden"
+          :disabled="this.status === 'loading'"
+          :options="['Ascendente', 'Descendente']"
+          v-model="sort"
+        />
+      </div>
+    </div>
+    <Chart
+      :data="chartData"
+      :sort="sort"
+      :loading="this.status === 'loading'"
+    />
   </div>
 </template>
 
 <script>
 import Select from "./components/Select";
 import Chart from "./components/Chart";
-import Loader from "./components/Loader";
 
 export default {
   name: "App",
-  components: { Select, Chart, Loader },
+  components: { Select, Chart },
   data() {
     return {
       crimeId: 1,
@@ -43,6 +61,7 @@ export default {
       selectedStateId: "",
       selectedMun: "",
       selectedMunId: "",
+      sort: "0",
       status: "idle",
       chartData: [],
     };
@@ -87,7 +106,6 @@ export default {
       ).municipios;
 
       if (this.selectedMunId !== "") {
-        console.log("change");
         this.selectedMunId = String(this.muns[0].id);
         this.selectedMun = this.muns.find(
           (mun) => mun.id === parseInt(this.selectedMunId)
@@ -105,7 +123,6 @@ export default {
         id_ent: parseInt(this.selectedStateId),
         id_mun1: parseInt(this.selectedMunId),
       };
-      console.log(parameters);
 
       fetch(url, {
         method: "POST",
@@ -118,7 +135,6 @@ export default {
         .then((data) => {
           this.status = "idle";
           this.chartData = data;
-          console.log(data);
         });
     },
     handleSelectChange() {
