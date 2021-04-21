@@ -119,8 +119,8 @@ export default {
             ).name;
             this.states = data.entidades;
           })
-          .catch(() => {
-            // console.log(err);
+          .catch((err) => {
+            console.log(err);
             const message =
               "No fue posible cargar los datos. Favor de refrescar la página";
             this.onRequestError(message);
@@ -153,11 +153,11 @@ export default {
         .then((data) => {
           this.onRequestSuccess(data);
         })
-        .catch(() => {
+        .catch((err) => {
           const message =
             "No fue posible obtener los datos. Por favor intenta nuevamente";
           this.onRequestError(message);
-          // console.log(err);
+          console.log(err);
         });
     },
 
